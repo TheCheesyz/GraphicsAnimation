@@ -2,7 +2,10 @@
 
 void GraphicsEngine::init() {
 	VulkanHandler vh;
-	vh.run();
 	GraphicsPipelineHandler gph;
+	vh.initWindow();
+	vh.initVulkan();
 	gph.createGraphicsPipeline();
+	vh.mainLoop();
+	vh.cleanup();
 }

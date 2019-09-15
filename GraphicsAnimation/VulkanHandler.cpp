@@ -17,13 +17,6 @@ const std::vector<const char*> deviceExtensions = {
 	const bool enableValidationLayers = true;
 #endif
 
-void VulkanHandler::run() {
-	initWindow();
-	initVulkan();
-	mainLoop();
-	cleanup();
-}
-
 void VulkanHandler::initWindow() {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

@@ -1,5 +1,5 @@
 #include "GraphicsPipelineHandler.h"
 
-void GraphicsPipelineHandler::createGraphicsPipeline()
-{
+void GraphicsPipelineHandler::createGraphicsPipeline() {
+
 }

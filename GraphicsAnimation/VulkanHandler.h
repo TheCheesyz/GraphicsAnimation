@@ -17,14 +17,12 @@
 
 class VulkanHandler {
 public:
-	void run();
-
-private:
 	void initWindow();
 	void initVulkan();
 	void mainLoop();
 	void cleanup();
 
+private:
 	void createInstance();
 	bool checkValidationLayerSupport();
 	void pickPhysicalDevice();
