@@ -1,5 +1,5 @@
-#ifndef MAKTRI_H
-#define MAKTRI_H
+#ifndef VULKAN_HANDLER
+#define VULKAN_HANDLER
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -15,7 +15,7 @@
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
 
-class MakingTriangle {
+class VulkanHandler {
 public:
 	void run();
 

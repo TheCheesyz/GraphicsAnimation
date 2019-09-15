@@ -1,4 +1,4 @@
-#include "MakingTriangle.h"
+#include "VulkanHandler.h"
 
 const int X_WIDTH = 800;
 const int Y_WIDTH = 600;
@@ -17,14 +17,14 @@ const std::vector<const char*> deviceExtensions = {
 	const bool enableValidationLayers = true;
 #endif
 
-void MakingTriangle::run() {
+void VulkanHandler::run() {
 	initWindow();
 	initVulkan();
 	mainLoop();
 	cleanup();
 }
 
-void MakingTriangle::initWindow() {
+void VulkanHandler::initWindow() {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -32,7 +32,7 @@ void MakingTriangle::initWindow() {
 	
 }
 
-void MakingTriangle::initVulkan() {
+void VulkanHandler::initVulkan() {
 	createInstance();
 	createSurface();
 	pickPhysicalDevice();
@@ -41,13 +41,13 @@ void MakingTriangle::initVulkan() {
 	createImageViews();
 }
 
-void MakingTriangle::mainLoop() {
+void VulkanHandler::mainLoop() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 	}
 }
 
-void MakingTriangle::cleanup() {
+void VulkanHandler::cleanup() {
 	for (auto imageView : swapChainImageViews) {
 		vkDestroyImageView(device, imageView, nullptr);
 	}
@@ -65,7 +65,7 @@ void MakingTriangle::cleanup() {
 	glfwTerminate();
 }
 
-void MakingTriangle::createInstance() {
+void VulkanHandler::createInstance() {
 	if (enableValidationLayers && !checkValidationLayerSupport()) {
 		throw std::runtime_error("Validation layers requested, yet not available.");
 	}
@@ -99,7 +99,7 @@ void MakingTriangle::createInstance() {
 	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);	
 }
 
-bool MakingTriangle::checkValidationLayerSupport() {
+bool VulkanHandler::checkValidationLayerSupport() {
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 	std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -122,7 +122,7 @@ bool MakingTriangle::checkValidationLayerSupport() {
 	return true;
 }
 
-void MakingTriangle::pickPhysicalDevice() {
+void VulkanHandler::pickPhysicalDevice() {
 	//VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	
 	uint32_t deviceCount = 0;
@@ -144,7 +144,7 @@ void MakingTriangle::pickPhysicalDevice() {
 	}
 }
 
-bool MakingTriangle::isDeviceSuitable(VkPhysicalDevice device) {
+bool VulkanHandler::isDeviceSuitable(VkPhysicalDevice device) {
 	QueueFamilyIndices indices = findQueueFamilies(device);
 	
 	bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -158,7 +158,7 @@ bool MakingTriangle::isDeviceSuitable(VkPhysicalDevice device) {
 	return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
-QueueFamilyIndices MakingTriangle::findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices VulkanHandler::findQueueFamilies(VkPhysicalDevice device) {
 	QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount = 0;
@@ -185,7 +185,7 @@ QueueFamilyIndices MakingTriangle::findQueueFamilies(VkPhysicalDevice device) {
 	return indices;
 }
 
-void MakingTriangle::createLogicalDevice() {
+void VulkanHandler::createLogicalDevice() {
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -226,13 +226,13 @@ void MakingTriangle::createLogicalDevice() {
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void MakingTriangle::createSurface() {
+void VulkanHandler::createSurface() {
 	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create window surface!");
 	}
 }
 
-bool MakingTriangle::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+bool VulkanHandler::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 	uint32_t extensionCount;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -248,7 +248,7 @@ bool MakingTriangle::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 	return requiredExtensions.empty();
 }
 
-SwapChainSupportDetails MakingTriangle::querySwapChainSupport(VkPhysicalDevice device) {
+SwapChainSupportDetails VulkanHandler::querySwapChainSupport(VkPhysicalDevice device) {
 	SwapChainSupportDetails details;
 
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -272,7 +272,7 @@ SwapChainSupportDetails MakingTriangle::querySwapChainSupport(VkPhysicalDevice d
 	return details;
 }
 
-VkSurfaceFormatKHR MakingTriangle::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+VkSurfaceFormatKHR VulkanHandler::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -283,7 +283,7 @@ VkSurfaceFormatKHR MakingTriangle::chooseSwapSurfaceFormat(const std::vector<VkS
 	return availableFormats[0];
 }
 
-VkPresentModeKHR MakingTriangle::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+VkPresentModeKHR VulkanHandler::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 {
 	for (const auto& availablePresentMode : availablePresentModes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -294,7 +294,7 @@ VkPresentModeKHR MakingTriangle::chooseSwapPresentMode(const std::vector<VkPrese
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D MakingTriangle::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+VkExtent2D VulkanHandler::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
@@ -309,7 +309,7 @@ VkExtent2D MakingTriangle::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capa
 	}
 }
 
-void MakingTriangle::createSwapChain() {
+void VulkanHandler::createSwapChain() {
 	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 	
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -365,7 +365,7 @@ void MakingTriangle::createSwapChain() {
 	swapChainExtent = extent;
 }
 
-void MakingTriangle::createImageViews() {
+void VulkanHandler::createImageViews() {
 	swapChainImageViews.resize(swapChainImages.size());
 
 	for (size_t i = 0; i < swapChainImages.size(); i++) {

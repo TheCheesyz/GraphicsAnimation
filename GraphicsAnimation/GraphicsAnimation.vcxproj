@@ -159,11 +159,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GraphicsEngine.cpp" />
+    <ClCompile Include="GraphicsPipelineHandler.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MakingTriangle.cpp" />
+    <ClCompile Include="VulkanHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MakingTriangle.h" />
+    <ClInclude Include="GraphicsEngine.h" />
+    <ClInclude Include="GraphicsPipelineHandler.h" />
+    <ClInclude Include="VulkanHandler.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />
   </ItemGroup>

@@ -1,10 +1,10 @@
-#include "MakingTriangle.h"
+#include "GraphicsEngine.h"
 
 int main() {
 
-	MakingTriangle tri;
+	GraphicsEngine ge;
 	try {
-		tri.run();
+		ge.init();
 	}
 	catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
