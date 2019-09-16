@@ -1,5 +1,5 @@
-#ifndef MAKTRI_H
-#define MAKTRI_H
+#ifndef VULKAN_HANDLER
+#define VULKAN_HANDLER
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -15,21 +15,27 @@
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
 
-class MakingTriangle {
+class VulkanHandler {
 public:
-	void run();
-
-private:
-	void initWindow();
+	GLFWwindow* initWindow();
 	void initVulkan();
-	void mainLoop();
 	void cleanup();
 
+	VkDevice& getDevice();
+	VkExtent2D& getSwapchainExtent();
+	VkFormat& getSwapchainFormat();
+	std::vector<VkImageView>& getSwapChainImageViews();
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+	VkPhysicalDevice& getPhysicalDevice();
+	VkSwapchainKHR& getSwapChain();
+	VkQueue& getGraphicsQueue();
+	VkQueue& getPresentQueue();
+
+private:
 	void createInstance();
 	bool checkValidationLayerSupport();
 	void pickPhysicalDevice();
 	bool isDeviceSuitable(VkPhysicalDevice device);
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	void createLogicalDevice();
 	void createSurface();
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -38,6 +44,7 @@ private:
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void createSwapChain();
+	void createImageViews();
 
 	GLFWwindow* window;
 	VkInstance instance;
@@ -50,6 +57,8 @@ private:
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
+	std::vector<VkImageView> swapChainImageViews;
+
 };
 
 #endif
