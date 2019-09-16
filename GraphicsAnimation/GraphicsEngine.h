@@ -12,14 +12,17 @@ public:
 private:
 	void mainLoop();
 	void drawFrame();
-	void createSemaphores();
+	void createSyncObjects();
 	void cleanup();
 
 	VulkanHandler vh;
 	GraphicsPipelineHandler gph;
 	GLFWwindow* window;
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkFence> inFlightFences;
+	size_t currentFrame = 0;
+
 };
 
 #endif
