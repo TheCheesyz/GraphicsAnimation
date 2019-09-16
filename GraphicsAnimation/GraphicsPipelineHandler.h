@@ -9,6 +9,7 @@
 class GraphicsPipelineHandler
 {
 public:
+	GraphicsPipelineHandler();
 	GraphicsPipelineHandler(VkDevice pdevice, VkExtent2D pswapChainExtent, VkFormat pswapChainImageFormat, std::vector<VkImageView> pswapChainImageViews, QueueFamilyIndices pqueueFamilyIndices);
 	void createRenderPass();
 	void createGraphicsPipeline();
@@ -16,6 +17,7 @@ public:
 	void createCommandPool();
 	void createCommandBuffers();
 	void cleanup();
+	std::vector<VkCommandBuffer>& getCommandBuffers();
 
 private:
 	std::vector<char> readFile(const std::string& filename);

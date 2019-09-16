@@ -27,6 +27,9 @@ public:
 	std::vector<VkImageView>& getSwapChainImageViews();
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	VkPhysicalDevice& getPhysicalDevice();
+	VkSwapchainKHR& getSwapChain();
+	VkQueue& getGraphicsQueue();
+	VkQueue& getPresentQueue();
 
 private:
 	void createInstance();

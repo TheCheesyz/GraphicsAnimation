@@ -172,11 +172,6 @@ QueueFamilyIndices VulkanHandler::findQueueFamilies(VkPhysicalDevice device) {
 	return indices;
 }
 
-VkPhysicalDevice& VulkanHandler::getPhysicalDevice()
-{
-	return physicalDevice;
-}
-
 void VulkanHandler::createLogicalDevice() {
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
@@ -404,3 +399,22 @@ std::vector<VkImageView>& VulkanHandler::getSwapChainImageViews()
 	return swapChainImageViews;
 }
 
+VkPhysicalDevice& VulkanHandler::getPhysicalDevice()
+{
+	return physicalDevice;
+}
+
+VkSwapchainKHR& VulkanHandler::getSwapChain()
+{
+	return swapChain;
+}
+
+VkQueue& VulkanHandler::getGraphicsQueue()
+{
+	return graphicsQueue;
+}
+
+VkQueue& VulkanHandler::getPresentQueue()
+{
+	return presentQueue;
+}
