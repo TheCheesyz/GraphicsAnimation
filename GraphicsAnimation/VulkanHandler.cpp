@@ -17,12 +17,12 @@ const std::vector<const char*> deviceExtensions = {
 	const bool enableValidationLayers = true;
 #endif
 
-void VulkanHandler::initWindow() {
+GLFWwindow* VulkanHandler::initWindow() {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	window = glfwCreateWindow(X_WIDTH, Y_WIDTH, "Vulkan", nullptr, nullptr);
-	
+	return window;
 }
 
 void VulkanHandler::initVulkan() {
@@ -32,12 +32,6 @@ void VulkanHandler::initVulkan() {
 	createLogicalDevice();
 	createSwapChain();
 	createImageViews();
-}
-
-void VulkanHandler::mainLoop() {
-	while (!glfwWindowShouldClose(window)) {
-		glfwPollEvents();
-	}
 }
 
 void VulkanHandler::cleanup() {
@@ -176,6 +170,11 @@ QueueFamilyIndices VulkanHandler::findQueueFamilies(VkPhysicalDevice device) {
 	}
 
 	return indices;
+}
+
+VkPhysicalDevice& VulkanHandler::getPhysicalDevice()
+{
+	return physicalDevice;
 }
 
 void VulkanHandler::createLogicalDevice() {
@@ -385,3 +384,23 @@ void VulkanHandler::createImageViews() {
 		}
 	}
 }
+
+VkDevice& VulkanHandler::getDevice() {
+
+	return device;
+}
+
+VkExtent2D& VulkanHandler::getSwapchainExtent() {
+	return swapChainExtent;
+}
+
+VkFormat& VulkanHandler::getSwapchainFormat()
+{
+	return swapChainImageFormat;
+}
+
+std::vector<VkImageView>& VulkanHandler::getSwapChainImageViews()
+{
+	return swapChainImageViews;
+}
+

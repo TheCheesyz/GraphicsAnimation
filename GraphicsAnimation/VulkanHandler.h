@@ -17,17 +17,22 @@
 
 class VulkanHandler {
 public:
-	void initWindow();
+	GLFWwindow* initWindow();
 	void initVulkan();
-	void mainLoop();
 	void cleanup();
+
+	VkDevice& getDevice();
+	VkExtent2D& getSwapchainExtent();
+	VkFormat& getSwapchainFormat();
+	std::vector<VkImageView>& getSwapChainImageViews();
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+	VkPhysicalDevice& getPhysicalDevice();
 
 private:
 	void createInstance();
 	bool checkValidationLayerSupport();
 	void pickPhysicalDevice();
 	bool isDeviceSuitable(VkPhysicalDevice device);
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	void createLogicalDevice();
 	void createSurface();
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
