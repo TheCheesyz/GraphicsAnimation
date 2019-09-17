@@ -20,6 +20,8 @@ public:
 	GLFWwindow* initWindow();
 	void initVulkan();
 	void cleanup();
+	void recreateSwapChainVulkan();
+	void cleanupSwapChainVulkan();
 
 	VkDevice& getDevice();
 	VkExtent2D& getSwapchainExtent();
@@ -30,6 +32,10 @@ public:
 	VkSwapchainKHR& getSwapChain();
 	VkQueue& getGraphicsQueue();
 	VkQueue& getPresentQueue();
+	bool getFramebufferResized();
+	void setFramebufferResized(bool resized);
+
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 private:
 	void createInstance();
@@ -58,6 +64,7 @@ private:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
+	bool framebufferResized = false;
 
 };
 

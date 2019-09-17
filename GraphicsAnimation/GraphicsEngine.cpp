@@ -6,17 +6,11 @@ void GraphicsEngine::init() {
 	vh = VulkanHandler();
 	window = vh.initWindow();
 	vh.initVulkan();
-	gph = GraphicsPipelineHandler(vh.getDevice(), vh.getSwapchainExtent(), vh.getSwapchainFormat(), vh.getSwapChainImageViews(), vh.findQueueFamilies(vh.getPhysicalDevice()));
-	gph.createRenderPass();
-	gph.createGraphicsPipeline();
-	gph.createFramebuffers();
-	gph.createCommandPool();
-	gph.createCommandBuffers();
+	gph = GraphicsPipelineHandler(&vh);
+	gph.initGraphicsPipeline();
 	createSyncObjects();
 	mainLoop();
 	cleanup();
-	gph.cleanup();
-	vh.cleanup();
 }
 
 void GraphicsEngine::mainLoop() {
@@ -30,10 +24,17 @@ void GraphicsEngine::mainLoop() {
 
 void GraphicsEngine::drawFrame() {
 	vkWaitForFences(vh.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(vh.getDevice(), 1, &inFlightFences[currentFrame]);
-
+	
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(vh.getDevice(), vh.getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(vh.getDevice(), vh.getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		recreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw std::runtime_error("Unable to acquire image for the swap chain.");
+	}
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -48,6 +49,8 @@ void GraphicsEngine::drawFrame() {
 	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	vkResetFences(vh.getDevice(), 1, &inFlightFences[currentFrame]);
 
 	if (vkQueueSubmit(vh.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("Unable to submit draw command.");
@@ -66,7 +69,14 @@ void GraphicsEngine::drawFrame() {
 
 	presentInfo.pResults = nullptr;
 
-	vkQueuePresentKHR(vh.getPresentQueue(), &presentInfo);
+	result = vkQueuePresentKHR(vh.getPresentQueue(), &presentInfo);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || vh.getFramebufferResized()) {
+		vh.setFramebufferResized(false);
+		recreateSwapChain();
+	}
+	else if (result != VK_SUCCESS) {
+		throw std::runtime_error("Unable to present image from swapchain.");
+	}
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -92,10 +102,35 @@ void GraphicsEngine::createSyncObjects() {
 	}
 }
 
+void GraphicsEngine::recreateSwapChain() {
+	int width = 0, height = 0;
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(vh.getDevice());
+
+	cleanupSwapChain();
+
+	vh.recreateSwapChainVulkan();
+	gph.recreateSwapChainGraphicsPipeline();
+}
+
+void GraphicsEngine::cleanupSwapChain() {
+	gph.cleanupSwapchainGraphicsPipeline();
+	vh.cleanupSwapChainVulkan();
+}
+
 void GraphicsEngine::cleanup() {
+	cleanupSwapChain();
+
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(vh.getDevice(), renderFinishedSemaphores[i], nullptr);
 		vkDestroySemaphore(vh.getDevice(), imageAvailableSemaphores[i], nullptr);
 		vkDestroyFence(vh.getDevice(), inFlightFences[i], nullptr);
 	}
+
+	gph.cleanup();
+	vh.cleanup();
 }
