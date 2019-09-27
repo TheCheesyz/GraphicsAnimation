@@ -26,6 +26,8 @@ private:
 	void createCommandPool();
 	void createCommandBuffers();
 	void createVertexBuffer();
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	VulkanHandler* vh;

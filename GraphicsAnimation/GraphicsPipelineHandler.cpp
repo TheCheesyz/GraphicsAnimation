@@ -314,34 +314,85 @@ void GraphicsPipelineHandler::createCommandBuffers() {
 }
 
 void GraphicsPipelineHandler::createVertexBuffer(){
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(vh->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), (size_t)bufferSize);
+	vkUnmapMemory(vh->getDevice(), stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+
+	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+	vkDestroyBuffer(vh->getDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(vh->getDevice(), stagingBufferMemory, nullptr);
+}
+
+void GraphicsPipelineHandler::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
 	VkBufferCreateInfo bufferInfo = {};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	if (vkCreateBuffer(vh->getDevice(), &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS) {
-		throw std::runtime_error("Unable to create vertex buffer.");
+	if (vkCreateBuffer(vh->getDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+		throw std::runtime_error("Unable to create buffer.");
 	}
 
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(vh->getDevice(), vertexBuffer, &memRequirements);
+	vkGetBufferMemoryRequirements(vh->getDevice(), buffer, &memRequirements);
 
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-	if (vkAllocateMemory(vh->getDevice(), &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS) {
+	if (vkAllocateMemory(vh->getDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
 		throw std::runtime_error("Unable to allocate vertex buffer memory");
 	}
 
-	vkBindBufferMemory(vh->getDevice(), vertexBuffer, vertexBufferMemory, 0);
+	vkBindBufferMemory(vh->getDevice(), buffer, bufferMemory, 0);
 
-	void* data;
-	vkMapMemory(vh->getDevice(), vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-	vkUnmapMemory(vh->getDevice(), vertexBufferMemory);
+}
+
+void GraphicsPipelineHandler::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+	VkCommandBufferAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = commandPool;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(vh->getDevice(), &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkBufferCopy copyRegion = {};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(vh->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(vh->getGraphicsQueue());
+
+	vkFreeCommandBuffers(vh->getDevice(), commandPool, 1, &commandBuffer);
 }
 
 uint32_t GraphicsPipelineHandler::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
