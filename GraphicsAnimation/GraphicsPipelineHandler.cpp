@@ -1,10 +1,14 @@
 #include "GraphicsPipelineHandler.h"
-#include "Vertex.h"
 
 const std::vector<Vertex> vertices = {
-	{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-	{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-	{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+	{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+	{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+	0,1,2,2,3,0
 };
 
 GraphicsPipelineHandler::GraphicsPipelineHandler() {
@@ -17,10 +21,13 @@ GraphicsPipelineHandler::GraphicsPipelineHandler(VulkanHandler* vh_) : vh(vh_) {
 
 void GraphicsPipelineHandler::initGraphicsPipeline() {
 	createRenderPass();
+	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
 	createVertexBuffer();
+	createIndexBuffer();
+	createUniformBuffers();
 	createCommandBuffers();
 }
 
@@ -28,10 +35,16 @@ void GraphicsPipelineHandler::recreateSwapChainGraphicsPipeline() {
 	createRenderPass();
 	createGraphicsPipeline();
 	createFramebuffers();
+	createUniformBuffers();
 	createCommandBuffers();
 }
 
 void GraphicsPipelineHandler::cleanupSwapchainGraphicsPipeline() {
+	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
+		vkDestroyBuffer(vh->getDevice(), uniformBuffers[i], nullptr);
+		vkFreeMemory(vh->getDevice(), uniformBuffersMemory[i], nullptr);
+	}
+	
 	for (size_t i = 0; i < swapChainFramebuffers.size(); i++) {
 		vkDestroyFramebuffer(vh->getDevice(), swapChainFramebuffers[i], nullptr);
 	}
@@ -82,6 +95,25 @@ void GraphicsPipelineHandler::createRenderPass() {
 
 	if (vkCreateRenderPass(vh->getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 		throw std::runtime_error("Unable to create render pass.");
+	}
+}
+
+void GraphicsPipelineHandler::createDescriptorSetLayout() {
+	VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &uboLayoutBinding;
+
+	if (vkCreateDescriptorSetLayout(vh->getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("Unable to create layout for descriptor set.");
 	}
 }
 
@@ -195,8 +227,8 @@ void GraphicsPipelineHandler::createGraphicsPipeline() {
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -303,7 +335,9 @@ void GraphicsPipelineHandler::createCommandBuffers() {
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-		vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -331,6 +365,37 @@ void GraphicsPipelineHandler::createVertexBuffer(){
 
 	vkDestroyBuffer(vh->getDevice(), stagingBuffer, nullptr);
 	vkFreeMemory(vh->getDevice(), stagingBufferMemory, nullptr);
+}
+
+void GraphicsPipelineHandler::createIndexBuffer() {
+	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(vh->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, indices.data(), (size_t)bufferSize);
+	vkUnmapMemory(vh->getDevice(), stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+
+	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+	vkDestroyBuffer(vh->getDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(vh->getDevice(), stagingBufferMemory, nullptr);
+}
+
+void GraphicsPipelineHandler::createUniformBuffers() {
+	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+	uniformBuffers.resize(vh->getSwapChainImages().size());
+	uniformBuffersMemory.resize(vh->getSwapChainImages().size());
+
+	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+	}
 }
 
 void GraphicsPipelineHandler::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
@@ -410,8 +475,14 @@ uint32_t GraphicsPipelineHandler::findMemoryType(uint32_t typeFilter, VkMemoryPr
 }
 
 void GraphicsPipelineHandler::cleanup() {
+	vkDestroyDescriptorSetLayout(vh->getDevice(), descriptorSetLayout, nullptr);
+
+	vkDestroyBuffer(vh->getDevice(), indexBuffer, nullptr);
+	vkFreeMemory(vh->getDevice(), indexBufferMemory, nullptr);
+
 	vkDestroyBuffer(vh->getDevice(), vertexBuffer, nullptr);
 	vkFreeMemory(vh->getDevice(), vertexBufferMemory, nullptr);
+	
 	vkDestroyCommandPool(vh->getDevice(), commandPool, nullptr);
 }
 
@@ -446,6 +517,11 @@ VkShaderModule GraphicsPipelineHandler::createShaderModule(const std::vector<cha
 	}
 
 	return shaderModule;
+}
+
+std::vector<VkDeviceMemory>& GraphicsPipelineHandler::getUniformBuffersMemory()
+{
+	return uniformBuffersMemory;
 }
 
 std::vector<VkCommandBuffer>& GraphicsPipelineHandler::getCommandBuffers()

@@ -27,6 +27,7 @@ public:
 	VkExtent2D& getSwapchainExtent();
 	VkFormat& getSwapchainFormat();
 	std::vector<VkImageView>& getSwapChainImageViews();
+	std::vector<VkImage>& getSwapChainImages();
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	VkPhysicalDevice& getPhysicalDevice();
 	VkSwapchainKHR& getSwapChain();

@@ -418,6 +418,11 @@ std::vector<VkImageView>& VulkanHandler::getSwapChainImageViews()
 	return swapChainImageViews;
 }
 
+std::vector<VkImage>& VulkanHandler::getSwapChainImages()
+{
+	return swapChainImages;
+}
+
 VkPhysicalDevice& VulkanHandler::getPhysicalDevice()
 {
 	return physicalDevice;
