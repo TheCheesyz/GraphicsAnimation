@@ -1,20 +1,16 @@
 #include "GraphicsEngine.h"
 
+const int MAX_FRAMES_IN_FLIGHT = 2;
+
 void GraphicsEngine::init() {
 	vh = VulkanHandler();
 	window = vh.initWindow();
 	vh.initVulkan();
-	gph = GraphicsPipelineHandler(vh.getDevice(), vh.getSwapchainExtent(), vh.getSwapchainFormat(), vh.getSwapChainImageViews(), vh.findQueueFamilies(vh.getPhysicalDevice()));
-	gph.createRenderPass();
-	gph.createGraphicsPipeline();
-	gph.createFramebuffers();
-	gph.createCommandPool();
-	gph.createCommandBuffers();
-	createSemaphores();
+	gph = GraphicsPipelineHandler(&vh);
+	gph.initGraphicsPipeline();
+	createSyncObjects();
 	mainLoop();
 	cleanup();
-	gph.cleanup();
-	vh.cleanup();
 }
 
 void GraphicsEngine::mainLoop() {
@@ -22,15 +18,29 @@ void GraphicsEngine::mainLoop() {
 		glfwPollEvents();
 		drawFrame();
 	}
+
+	vkDeviceWaitIdle(vh.getDevice());
 }
 
 void GraphicsEngine::drawFrame() {
+	vkWaitForFences(vh.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+	
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(vh.getDevice(), vh.getSwapChain(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(vh.getDevice(), vh.getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		recreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw std::runtime_error("Unable to acquire image for the swap chain.");
+	}
+
+	updateUniformBuffer(imageIndex);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+	VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -38,11 +48,13 @@ void GraphicsEngine::drawFrame() {
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &(gph.getCommandBuffers())[imageIndex];
 
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(vh.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+	vkResetFences(vh.getDevice(), 1, &inFlightFences[currentFrame]);
+
+	if (vkQueueSubmit(vh.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("Unable to submit draw command.");
 	}
 
@@ -59,19 +71,87 @@ void GraphicsEngine::drawFrame() {
 
 	presentInfo.pResults = nullptr;
 
-	vkQueuePresentKHR(vh.getPresentQueue(), &presentInfo);
+	result = vkQueuePresentKHR(vh.getPresentQueue(), &presentInfo);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || vh.getFramebufferResized()) {
+		vh.setFramebufferResized(false);
+		recreateSwapChain();
+	}
+	else if (result != VK_SUCCESS) {
+		throw std::runtime_error("Unable to present image from swapchain.");
+	}
+
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void GraphicsEngine::createSemaphores() {
+void GraphicsEngine::createSyncObjects() {
+	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
 	VkSemaphoreCreateInfo semaphoreInfo = {};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	if (vkCreateSemaphore(vh.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-		vkCreateSemaphore(vh.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS) {
-		throw std::runtime_error("Unable to create semaphores.");
+
+	VkFenceCreateInfo fenceInfo = {};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+		if (vkCreateSemaphore(vh.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(vh.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+			vkCreateFence(vh.getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+			throw std::runtime_error("Unable to create sync objects.");
+		}
 	}
 }
 
+void GraphicsEngine::recreateSwapChain() {
+	int width = 0, height = 0;
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(vh.getDevice());
+
+	cleanupSwapChain();
+
+	vh.recreateSwapChainVulkan();
+	gph.recreateSwapChainGraphicsPipeline();
+}
+
+void GraphicsEngine::updateUniformBuffer(uint32_t currentImage) {
+	static auto startTime = std::chrono::high_resolution_clock::now();
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+	UniformBufferObject ubo = {};
+	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.proj = glm::perspective(glm::radians(45.0f), vh.getSwapchainExtent().width / (float) vh.getSwapchainExtent().height, 0.1f, 10.0f);
+
+	ubo.proj[1][1] *= -1;
+
+	void* data;
+	vkMapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage], 0, sizeof(ubo), 0, &data);
+	memcpy(data, &ubo, sizeof(ubo));
+	vkUnmapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage]);
+}
+
+void GraphicsEngine::cleanupSwapChain() {
+	gph.cleanupSwapchainGraphicsPipeline();
+	vh.cleanupSwapChainVulkan();
+}
+
 void GraphicsEngine::cleanup() {
-	vkDestroySemaphore(vh.getDevice(), renderFinishedSemaphore, nullptr);
-	vkDestroySemaphore(vh.getDevice(), imageAvailableSemaphore, nullptr);
+	cleanupSwapChain();
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(vh.getDevice(), renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(vh.getDevice(), imageAvailableSemaphores[i], nullptr);
+		vkDestroyFence(vh.getDevice(), inFlightFences[i], nullptr);
+	}
+
+	gph.cleanup();
+	vh.cleanup();
 }

@@ -167,6 +167,8 @@
   <ItemGroup>
     <ClInclude Include="GraphicsEngine.h" />
     <ClInclude Include="GraphicsPipelineHandler.h" />
+    <ClInclude Include="UniformBufferObject.h" />
+    <ClInclude Include="Vertex.h" />
     <ClInclude Include="VulkanHandler.h" />
     <ClInclude Include="QueueFamilyIndices.h" />
     <ClInclude Include="SwapChainSupportDetails.h" />

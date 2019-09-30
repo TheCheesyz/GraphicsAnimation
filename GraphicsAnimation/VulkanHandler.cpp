@@ -20,9 +20,15 @@ const std::vector<const char*> deviceExtensions = {
 GLFWwindow* VulkanHandler::initWindow() {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	window = glfwCreateWindow(X_WIDTH, Y_WIDTH, "Vulkan", nullptr, nullptr);
+	glfwSetWindowUserPointer(window, this);
+	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	return window;
+}
+
+void VulkanHandler::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	auto app = reinterpret_cast<VulkanHandler*>(glfwGetWindowUserPointer(window));
+	app->framebufferResized = true;
 }
 
 void VulkanHandler::initVulkan() {
@@ -35,12 +41,6 @@ void VulkanHandler::initVulkan() {
 }
 
 void VulkanHandler::cleanup() {
-	for (auto imageView : swapChainImageViews) {
-		vkDestroyImageView(device, imageView, nullptr);
-	}
-
-	vkDestroySwapchainKHR(device, swapChain, nullptr);
-
 	vkDestroyDevice(device, nullptr);
 
 	vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -50,6 +50,19 @@ void VulkanHandler::cleanup() {
 	glfwDestroyWindow(window);
 
 	glfwTerminate();
+}
+
+void VulkanHandler::recreateSwapChainVulkan() {
+	createSwapChain();
+	createImageViews();
+}
+
+void VulkanHandler::cleanupSwapChainVulkan() {
+	for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+		vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+	}
+
+	vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
 void VulkanHandler::createInstance() {
@@ -287,7 +300,13 @@ VkExtent2D VulkanHandler::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capab
 		return capabilities.currentExtent;
 	}
 	else {
-		VkExtent2D actualExtent = {X_WIDTH, Y_WIDTH};
+		int width, height;
+		glfwGetFramebufferSize(window, &width, &height);
+
+		VkExtent2D actualExtent = {
+			static_cast<uint32_t>(width),
+			static_cast<uint32_t>(height)
+		};
 		
 		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
@@ -399,6 +418,11 @@ std::vector<VkImageView>& VulkanHandler::getSwapChainImageViews()
 	return swapChainImageViews;
 }
 
+std::vector<VkImage>& VulkanHandler::getSwapChainImages()
+{
+	return swapChainImages;
+}
+
 VkPhysicalDevice& VulkanHandler::getPhysicalDevice()
 {
 	return physicalDevice;
@@ -417,4 +441,13 @@ VkQueue& VulkanHandler::getGraphicsQueue()
 VkQueue& VulkanHandler::getPresentQueue()
 {
 	return presentQueue;
+}
+
+bool VulkanHandler::getFramebufferResized()
+{
+	return framebufferResized;
+}
+
+void VulkanHandler::setFramebufferResized(bool resized){
+	framebufferResized = resized;
 }
