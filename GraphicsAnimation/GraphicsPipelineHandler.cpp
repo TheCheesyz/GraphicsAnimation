@@ -28,6 +28,8 @@ void GraphicsPipelineHandler::initGraphicsPipeline() {
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffers();
 }
 
@@ -36,6 +38,8 @@ void GraphicsPipelineHandler::recreateSwapChainGraphicsPipeline() {
 	createGraphicsPipeline();
 	createFramebuffers();
 	createUniformBuffers();
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffers();
 }
 
@@ -44,6 +48,8 @@ void GraphicsPipelineHandler::cleanupSwapchainGraphicsPipeline() {
 		vkDestroyBuffer(vh->getDevice(), uniformBuffers[i], nullptr);
 		vkFreeMemory(vh->getDevice(), uniformBuffersMemory[i], nullptr);
 	}
+
+	vkDestroyDescriptorPool(vh->getDevice(), descriptorPool, nullptr);
 	
 	for (size_t i = 0; i < swapChainFramebuffers.size(); i++) {
 		vkDestroyFramebuffer(vh->getDevice(), swapChainFramebuffers[i], nullptr);
@@ -178,7 +184,7 @@ void GraphicsPipelineHandler::createGraphicsPipeline() {
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f;
 	rasterizer.depthBiasClamp = 0.0f;
@@ -337,6 +343,8 @@ void GraphicsPipelineHandler::createCommandBuffers() {
 
 		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
+		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+
 		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
@@ -395,6 +403,57 @@ void GraphicsPipelineHandler::createUniformBuffers() {
 
 	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
 		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+	}
+}
+
+void GraphicsPipelineHandler::createDescriptorPool() {
+	VkDescriptorPoolSize poolSize = {};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = static_cast<uint32_t>(vh->getSwapChainImages().size());
+
+	VkDescriptorPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.maxSets = static_cast<uint32_t>(vh->getSwapChainImages().size());
+
+	if (vkCreateDescriptorPool(vh->getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+		throw std::runtime_error("Unable to make the descriptor pool.");
+	}
+}
+
+void GraphicsPipelineHandler::createDescriptorSets() {
+	std::vector<VkDescriptorSetLayout> layouts(vh->getSwapChainImages().size(), descriptorSetLayout);
+
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(vh->getSwapChainImages().size());
+	allocInfo.pSetLayouts = layouts.data();
+
+	descriptorSets.resize(vh->getSwapChainImages().size());
+	if (vkAllocateDescriptorSets(vh->getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+		throw std::runtime_error("Unable to allocate space for the descriptor sets.");
+	}
+
+	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
+		VkDescriptorBufferInfo bufferInfo = {};
+		bufferInfo.buffer = uniformBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+
+		VkWriteDescriptorSet descriptorWrite = {};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = descriptorSets[i];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pImageInfo = nullptr;
+		descriptorWrite.pTexelBufferView = nullptr;
+
+		vkUpdateDescriptorSets(vh->getDevice(), 1, &descriptorWrite, 0, nullptr);
 	}
 }
 

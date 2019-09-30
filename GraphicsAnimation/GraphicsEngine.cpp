@@ -133,9 +133,9 @@ void GraphicsEngine::updateUniformBuffer(uint32_t currentImage) {
 	ubo.proj[1][1] *= -1;
 
 	void* data;
-	vkMapMemory(vh.getDevice(), gph.getUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+	vkMapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(vh.getDevice(), gph.getUniformBuffersMemory[currentImage]);
+	vkUnmapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage]);
 }
 
 void GraphicsEngine::cleanupSwapChain() {
