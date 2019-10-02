@@ -1,7 +1,6 @@
 #ifndef GRAPHICS_PIPELINE
 #define GRAPHICS_PIPELINE
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <fstream>
@@ -45,6 +44,8 @@ private:
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void createTextureImage();
+	void createTextureImageView();
+	void createTextureSampler();
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void createDepthResources();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -69,6 +70,8 @@ private:
 	std::vector<VkDescriptorSet> descriptorSets;
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
+	VkImageView textureImageView;
+	VkSampler textureSampler;
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
