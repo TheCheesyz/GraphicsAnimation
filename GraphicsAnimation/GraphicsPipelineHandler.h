@@ -19,6 +19,9 @@ public:
 	void recreateSwapChainGraphicsPipeline();
 	void cleanupSwapchainGraphicsPipeline();
 	void cleanup();
+	void setTexturePath(std::string path);
+	void setVertices(std::vector<Vertex> vertices_);
+	void setIndices(std::vector<uint32_t> indices_);
 	std::vector<VkDeviceMemory>& getUniformBuffersMemory();
 	std::vector<VkCommandBuffer>& getCommandBuffers();
 
@@ -60,6 +63,8 @@ private:
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 	VkBuffer indexBuffer;
@@ -75,6 +80,8 @@ private:
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
+
+	std::string texturePath;
 };
 
 #endif

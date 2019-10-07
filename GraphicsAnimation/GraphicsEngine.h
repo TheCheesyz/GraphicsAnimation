@@ -8,6 +8,7 @@
 #include <chrono>
 #include "VulkanHandler.h"
 #include "GraphicsPipelineHandler.h"
+#include "ObjLoader.h"
 
 class GraphicsEngine
 {
@@ -25,6 +26,7 @@ private:
 
 	VulkanHandler vh;
 	GraphicsPipelineHandler gph;
+	ObjLoader ol;
 	GLFWwindow* window;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;

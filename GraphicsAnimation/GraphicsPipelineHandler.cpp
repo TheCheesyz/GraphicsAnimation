@@ -1,23 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "GraphicsPipelineHandler.h"
 
-const std::vector<Vertex> vertices = {
-	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-	{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {2.0f, 0.0f}},
-	{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 2.0f}},
-	{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {2.0f, 2.0f}}
-};
-
-const std::vector<uint16_t> indices = {
-	0,1,2,2,3,0,
-	4,5,6,6,7,4
-};
-
 GraphicsPipelineHandler::GraphicsPipelineHandler() {
 
 }
@@ -401,7 +384,7 @@ void GraphicsPipelineHandler::createCommandBuffers() {
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
@@ -687,7 +670,7 @@ uint32_t GraphicsPipelineHandler::findMemoryType(uint32_t typeFilter, VkMemoryPr
 
 void GraphicsPipelineHandler::createTextureImage() {
 	int textureWidth, textureHeight, textureChannels;
-	stbi_uc* pixels = stbi_load("texture.jpg", &textureWidth, &textureHeight, &textureChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(texturePath.c_str(), &textureWidth, &textureHeight, &textureChannels, STBI_rgb_alpha);
 	VkDeviceSize imageSize = textureWidth * textureHeight * 4;
 
 	if (!pixels) {
@@ -861,6 +844,18 @@ void GraphicsPipelineHandler::cleanup() {
 	vkFreeMemory(vh->getDevice(), vertexBufferMemory, nullptr);
 	
 	vkDestroyCommandPool(vh->getDevice(), commandPool, nullptr);
+}
+
+void GraphicsPipelineHandler::setTexturePath(std::string path) {
+	texturePath = path;
+}
+
+void GraphicsPipelineHandler::setVertices(std::vector<Vertex> vertices_) {
+	vertices = vertices_;
+}
+
+void GraphicsPipelineHandler::setIndices(std::vector<uint32_t> indices_) {
+	indices = indices_;
 }
 
 std::vector<char> GraphicsPipelineHandler::readFile(const std::string& filename)

@@ -106,7 +106,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\glfw-3.3.bin.WIN64\include;C:\Program Files %28x86%29\Microsoft Visual Studio\2019\Libraries\glm;C:\VulkanSDK\1.1.114.0\Include;C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\obj_loader;C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\glfw-3.3.bin.WIN64\include;C:\Program Files %28x86%29\Microsoft Visual Studio\2019\Libraries\glm;C:\VulkanSDK\1.1.114.0\Include;C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -146,7 +146,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\glfw-3.3.bin.WIN64\include;C:\Program Files %28x86%29\Microsoft Visual Studio\2019\Libraries\glm;C:\VulkanSDK\1.1.114.0\Include;C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\obj_loader;C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\glfw-3.3.bin.WIN64\include;C:\Program Files %28x86%29\Microsoft Visual Studio\2019\Libraries\glm;C:\VulkanSDK\1.1.114.0\Include;C:\Users\zeph\OneDrive\Documents\Visual Studio 2019\Libraries\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -162,11 +162,13 @@
     <ClCompile Include="GraphicsEngine.cpp" />
     <ClCompile Include="GraphicsPipelineHandler.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="VulkanHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GraphicsEngine.h" />
     <ClInclude Include="GraphicsPipelineHandler.h" />
+    <ClInclude Include="ObjLoader.h" />
     <ClInclude Include="UniformBufferObject.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VulkanHandler.h" />
