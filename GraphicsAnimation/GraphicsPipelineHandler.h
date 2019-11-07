@@ -8,7 +8,8 @@
 #include <vulkan\vulkan_core.h>
 #include "VulkanHandler.h"
 #include "Vertex.h"
-#include "UniformBufferObject.h"
+//#include "UniformBufferObject.h"
+#include "RenderedObject.h"
 
 class GraphicsPipelineHandler
 {
@@ -22,6 +23,7 @@ public:
 	void setTexturePath(std::string path);
 	void setVertices(std::vector<Vertex> vertices_);
 	void setIndices(std::vector<uint32_t> indices_);
+	void createRenderedObjects(int size);
 	std::vector<VkDeviceMemory>& getUniformBuffersMemory();
 	std::vector<VkCommandBuffer>& getCommandBuffers();
 
@@ -69,10 +71,11 @@ private:
 	VkDeviceMemory vertexBufferMemory;
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
-	std::vector<VkBuffer> uniformBuffers;
+	//std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
+	//std::vector<VkDescriptorSet> descriptorSets;
+	std::vector<RenderedObject> renderedObjects; // contain the uniformBuffers and descriptorSets
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureImageView;

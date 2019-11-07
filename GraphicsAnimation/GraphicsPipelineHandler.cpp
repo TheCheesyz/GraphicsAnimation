@@ -44,7 +44,7 @@ void GraphicsPipelineHandler::cleanupSwapchainGraphicsPipeline() {
 	vkFreeMemory(vh->getDevice(), depthImageMemory, nullptr);
 	
 	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
-		vkDestroyBuffer(vh->getDevice(), uniformBuffers[i], nullptr);
+		vkDestroyBuffer(vh->getDevice(), renderedObjects[i].uniformBuffer, nullptr);
 		vkFreeMemory(vh->getDevice(), uniformBuffersMemory[i], nullptr);
 	}
 
@@ -386,9 +386,11 @@ void GraphicsPipelineHandler::createCommandBuffers() {
 
 		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-
-		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		//Add multiple objects here
+		for (auto renderedObject : renderedObjects) {
+			vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &renderedObject.descriptorSets[i], 0, nullptr);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		}
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -441,27 +443,27 @@ void GraphicsPipelineHandler::createIndexBuffer() {
 void GraphicsPipelineHandler::createUniformBuffers() {
 	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-	uniformBuffers.resize(vh->getSwapChainImages().size());
+	//uniformBuffers.resize(vh->getSwapChainImages().size());
 	uniformBuffersMemory.resize(vh->getSwapChainImages().size());
 
 	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
-		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, renderedObjects[i].uniformBuffer, uniformBuffersMemory[i]);
 	}
 }
 
 void GraphicsPipelineHandler::createDescriptorPool() {
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(vh->getSwapChainImages().size());
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(vh->getSwapChainImages().size() * renderedObjects.size());
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = static_cast<uint32_t>(vh->getSwapChainImages().size());
+	poolSizes[1].descriptorCount = static_cast<uint32_t>(vh->getSwapChainImages().size() * renderedObjects.size());
 
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(vh->getSwapChainImages().size());
+	poolInfo.maxSets = static_cast<uint32_t>(vh->getSwapChainImages().size() * renderedObjects.size());
 
 	if (vkCreateDescriptorPool(vh->getDevice(), &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 		throw std::runtime_error("Unable to make the descriptor pool.");
@@ -477,44 +479,47 @@ void GraphicsPipelineHandler::createDescriptorSets() {
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(vh->getSwapChainImages().size());
 	allocInfo.pSetLayouts = layouts.data();
 
-	descriptorSets.resize(vh->getSwapChainImages().size());
-	if (vkAllocateDescriptorSets(vh->getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-		throw std::runtime_error("Unable to allocate space for the descriptor sets.");
-	}
+	for (auto &renderedObject : renderedObjects) {
+		std::cout << vh->getSwapChainImages().size() << std::endl; //debug text
+		renderedObject.descriptorSets.resize(vh->getSwapChainImages().size());
+		if (vkAllocateDescriptorSets(vh->getDevice(), &allocInfo, renderedObject.descriptorSets.data()) != VK_SUCCESS) {
+			throw std::runtime_error("Unable to allocate space for the descriptor sets.");
+		}
 
-	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
-		VkDescriptorBufferInfo bufferInfo = {};
-		bufferInfo.buffer = uniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
+		for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
+			VkDescriptorBufferInfo bufferInfo = {};
+			bufferInfo.buffer = renderedObjects[i].uniformBuffer;
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(UniformBufferObject);
 
-		VkDescriptorImageInfo imageInfo = {};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = textureImageView;
-		imageInfo.sampler = textureSampler;
+			VkDescriptorImageInfo imageInfo = {};
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.imageView = textureImageView;
+			imageInfo.sampler = textureSampler;
 
-		std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
-		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].dstSet = descriptorSets[i];
-		descriptorWrites[0].dstBinding = 0;
-		descriptorWrites[0].dstArrayElement = 0;
-		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].pBufferInfo = &bufferInfo;
-		descriptorWrites[0].pImageInfo = nullptr;
-		descriptorWrites[0].pTexelBufferView = nullptr;
+			std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = renderedObject.descriptorSets[i];
+			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pBufferInfo = &bufferInfo;
+			descriptorWrites[0].pImageInfo = nullptr;
+			descriptorWrites[0].pTexelBufferView = nullptr;
 
-		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = descriptorSets[i];
-		descriptorWrites[1].dstBinding = 1;
-		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].pBufferInfo = nullptr;
-		descriptorWrites[1].pImageInfo = &imageInfo;
-		descriptorWrites[1].pTexelBufferView = nullptr;
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = renderedObject.descriptorSets[i];
+			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].pBufferInfo = nullptr;
+			descriptorWrites[1].pImageInfo = &imageInfo;
+			descriptorWrites[1].pTexelBufferView = nullptr;
 
-		vkUpdateDescriptorSets(vh->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(vh->getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		}
 	}
 }
 
@@ -856,6 +861,11 @@ void GraphicsPipelineHandler::setVertices(std::vector<Vertex> vertices_) {
 
 void GraphicsPipelineHandler::setIndices(std::vector<uint32_t> indices_) {
 	indices = indices_;
+}
+
+void GraphicsPipelineHandler::createRenderedObjects(int size)
+{
+	renderedObjects.resize(size);
 }
 
 std::vector<char> GraphicsPipelineHandler::readFile(const std::string& filename)

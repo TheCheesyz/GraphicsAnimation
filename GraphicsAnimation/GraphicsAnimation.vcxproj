@@ -169,6 +169,7 @@
     <ClInclude Include="GraphicsEngine.h" />
     <ClInclude Include="GraphicsPipelineHandler.h" />
     <ClInclude Include="ObjLoader.h" />
+    <ClInclude Include="RenderedObject.h" />
     <ClInclude Include="UniformBufferObject.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VulkanHandler.h" />

@@ -3,6 +3,8 @@
 const std::string MODEL_PATH = "models/CESAR.obj";
 const std::string TEXTURE_PATH = "textures/CESAR.jpg";
 
+const int RENDERED_OBJECTS = 2;
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 void GraphicsEngine::init() {
@@ -15,6 +17,7 @@ void GraphicsEngine::init() {
 	gph.setTexturePath(TEXTURE_PATH);
 	gph.setVertices(ol.getVertices());
 	gph.setIndices(ol.getIndices());
+	gph.createRenderedObjects(RENDERED_OBJECTS);
 	gph.initGraphicsPipeline();
 	createSyncObjects();
 	mainLoop();
