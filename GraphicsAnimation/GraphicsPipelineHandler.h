@@ -26,6 +26,7 @@ public:
 	void createRenderedObjects(int size);
 	std::vector<VkDeviceMemory>& getUniformBuffersMemory();
 	std::vector<VkCommandBuffer>& getCommandBuffers();
+	int getRenderedObjectsSize();
 
 private:
 	std::vector<char> readFile(const std::string& filename);

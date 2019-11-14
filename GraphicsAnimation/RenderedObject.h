@@ -9,7 +9,8 @@ struct RenderedObject {
 	UniformBufferObject ubo;
 	std::vector<VkDescriptorSet> descriptorSets;
 	//VkDescriptorSet descriptorSet;
-	VkBuffer uniformBuffer;
+	std::vector<VkBuffer> uniformBuffers;
+	//VkBuffer uniformBuffer;
 };
 
 #endif

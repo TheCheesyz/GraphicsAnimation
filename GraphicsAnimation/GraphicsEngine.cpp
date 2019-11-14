@@ -136,18 +136,29 @@ void GraphicsEngine::updateUniformBuffer(uint32_t currentImage) {
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-	UniformBufferObject ubo = {};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, -1.0f, .0f));
-	ubo.model = glm::scale(ubo.model, glm::vec3(.1f, .1f, .1f));
-	ubo.view = glm::lookAt(glm::vec3(0.0f, 1.0f, 4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), vh.getSwapchainExtent().width / (float) vh.getSwapchainExtent().height, 0.1f, 10.0f);
+	for (int i = 0; i < gph.getRenderedObjectsSize(); i++) {
+		UniformBufferObject ubo = {};
 
-	ubo.proj[1][1] *= -1;
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, -1.0f, .0f));
+		ubo.model = glm::scale(ubo.model, glm::vec3(.1f, .1f, .1f));
 
-	void* data;
-	vkMapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage], 0, sizeof(ubo), 0, &data);
-	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage]);
+		if (i == 0) {
+			ubo.model = glm::translate(ubo.model, glm::vec3(1.0f * time, .0f, .0f));
+		}
+		else {
+			ubo.model = glm::translate(ubo.model, glm::vec3(-1.0f * time, .0f, .0f));
+		}
+
+		ubo.view = glm::lookAt(glm::vec3(0.0f, 1.0f, 4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), vh.getSwapchainExtent().width / (float)vh.getSwapchainExtent().height, 0.1f, 10.0f);
+
+		ubo.proj[1][1] *= -1;
+
+		void* data;
+		vkMapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage + (i * vh.getSwapChainImages().size())], 0, sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage + (i * vh.getSwapChainImages().size())]);
+	}
 }
 
 void GraphicsEngine::cleanupSwapChain() {

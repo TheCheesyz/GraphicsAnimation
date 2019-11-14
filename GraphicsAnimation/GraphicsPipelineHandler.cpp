@@ -42,10 +42,12 @@ void GraphicsPipelineHandler::cleanupSwapchainGraphicsPipeline() {
 	vkDestroyImageView(vh->getDevice(), depthImageView, nullptr);
 	vkDestroyImage(vh->getDevice(), depthImage, nullptr);
 	vkFreeMemory(vh->getDevice(), depthImageMemory, nullptr);
-	
-	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
-		vkDestroyBuffer(vh->getDevice(), renderedObjects[i].uniformBuffer, nullptr);
-		vkFreeMemory(vh->getDevice(), uniformBuffersMemory[i], nullptr);
+
+	for (size_t j = 0; j < renderedObjects.size(); j++) {
+		for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
+			vkDestroyBuffer(vh->getDevice(), renderedObjects[j].uniformBuffers[i], nullptr);
+			vkFreeMemory(vh->getDevice(), uniformBuffersMemory[i + (j * vh->getSwapChainImages().size())], nullptr);
+		}
 	}
 
 	vkDestroyDescriptorPool(vh->getDevice(), descriptorPool, nullptr);
@@ -444,10 +446,12 @@ void GraphicsPipelineHandler::createUniformBuffers() {
 	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
 	//uniformBuffers.resize(vh->getSwapChainImages().size());
-	uniformBuffersMemory.resize(vh->getSwapChainImages().size());
-
-	for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
-		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, renderedObjects[i].uniformBuffer, uniformBuffersMemory[i]);
+	uniformBuffersMemory.resize(vh->getSwapChainImages().size() * renderedObjects.size());
+	for (size_t j = 0; j < renderedObjects.size(); j++) {
+		renderedObjects[j].uniformBuffers.resize(vh->getSwapChainImages().size());
+		for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
+			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, renderedObjects[j].uniformBuffers[i], uniformBuffersMemory[i + (j * vh->getSwapChainImages().size())]);
+		}
 	}
 }
 
@@ -480,15 +484,16 @@ void GraphicsPipelineHandler::createDescriptorSets() {
 	allocInfo.pSetLayouts = layouts.data();
 
 	for (auto &renderedObject : renderedObjects) {
-		std::cout << vh->getSwapChainImages().size() << std::endl; //debug text
+		//std::cout << vh->getSwapChainImages().size() << std::endl; //debug text
 		renderedObject.descriptorSets.resize(vh->getSwapChainImages().size());
 		if (vkAllocateDescriptorSets(vh->getDevice(), &allocInfo, renderedObject.descriptorSets.data()) != VK_SUCCESS) {
 			throw std::runtime_error("Unable to allocate space for the descriptor sets.");
 		}
 
 		for (size_t i = 0; i < vh->getSwapChainImages().size(); i++) {
+			//std::cout << i << std::endl; //debug text
 			VkDescriptorBufferInfo bufferInfo = {};
-			bufferInfo.buffer = renderedObjects[i].uniformBuffer;
+			bufferInfo.buffer = renderedObject.uniformBuffers[i];
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -909,4 +914,9 @@ std::vector<VkDeviceMemory>& GraphicsPipelineHandler::getUniformBuffersMemory()
 std::vector<VkCommandBuffer>& GraphicsPipelineHandler::getCommandBuffers()
 {
 	return commandBuffers;
+}
+
+int GraphicsPipelineHandler::getRenderedObjectsSize()
+{
+	return renderedObjects.size();
 }
