@@ -9,6 +9,7 @@
 #include "VulkanHandler.h"
 #include "GraphicsPipelineHandler.h"
 #include "ObjLoader.h"
+#include "FigureNodes.h"
 
 class GraphicsEngine
 {
@@ -24,6 +25,9 @@ private:
 	void cleanupSwapChain();
 	void cleanup();
 
+	void createFigure();
+	void figureUpdate(FigureNodes node, uint32_t currentImage);
+
 	VulkanHandler vh;
 	GraphicsPipelineHandler gph;
 	ObjLoader ol;
@@ -33,6 +37,8 @@ private:
 	std::vector<VkFence> inFlightFences;
 	size_t currentFrame = 0;
 
+	FigureNodes root;
+	uint32_t nodeIterator;
 };
 
 #endif

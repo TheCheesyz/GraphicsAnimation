@@ -166,6 +166,7 @@
     <ClCompile Include="VulkanHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FigureNodes.h" />
     <ClInclude Include="GraphicsEngine.h" />
     <ClInclude Include="GraphicsPipelineHandler.h" />
     <ClInclude Include="ObjLoader.h" />

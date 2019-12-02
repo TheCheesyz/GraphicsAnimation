@@ -1,9 +1,11 @@
 #include "GraphicsEngine.h"
 
-const std::string MODEL_PATH = "models/CESAR.obj";
-const std::string TEXTURE_PATH = "textures/CESAR.jpg";
+#include "glm/ext.hpp" //Delete THis
 
-const int RENDERED_OBJECTS = 2;
+const std::string MODEL_PATH = "models/round.obj";
+const std::string TEXTURE_PATH = "textures/Gray.jpg";
+
+const int RENDERED_OBJECTS = 12;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -20,6 +22,7 @@ void GraphicsEngine::init() {
 	gph.createRenderedObjects(RENDERED_OBJECTS);
 	gph.initGraphicsPipeline();
 	createSyncObjects();
+	createFigure();
 	mainLoop();
 	cleanup();
 }
@@ -136,11 +139,16 @@ void GraphicsEngine::updateUniformBuffer(uint32_t currentImage) {
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
+	//Create Figure
+	nodeIterator = 0;
+	figureUpdate(root, currentImage);
+	//End Create Figure
+	/*
 	for (int i = 0; i < gph.getRenderedObjectsSize(); i++) {
 		UniformBufferObject ubo = {};
 
 		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, -1.0f, .0f));
-		ubo.model = glm::scale(ubo.model, glm::vec3(.1f, .1f, .1f));
+		ubo.model = glm::scale(ubo.model, glm::vec3(0.5f, 0.5f, 0.5f));
 
 		if (i == 0) {
 			ubo.model = glm::translate(ubo.model, glm::vec3(1.0f * time, .0f, .0f));
@@ -159,6 +167,7 @@ void GraphicsEngine::updateUniformBuffer(uint32_t currentImage) {
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage + (i * vh.getSwapChainImages().size())]);
 	}
+	*/
 }
 
 void GraphicsEngine::cleanupSwapChain() {
@@ -177,4 +186,98 @@ void GraphicsEngine::cleanup() {
 
 	gph.cleanup();
 	vh.cleanup();
+}
+
+void GraphicsEngine::createFigure() {
+	root.pos = glm::vec3(0.0f, 0.0f, 0.0f);
+	FigureNodes neck;
+	std::shared_ptr<FigureNodes> rootPtr = std::make_shared<FigureNodes>(root);
+	neck.parent = rootPtr;
+	neck.pos = glm::vec3(-sqrt(.5), -sqrt(.5), 0.0);
+	FigureNodes head;
+	head.parent = std::make_shared<FigureNodes>(neck);
+	head.pos = glm::vec3(-1.0 - sqrt(.5), -sqrt(.5), 0.0);
+	neck.children.push_back(head);
+	
+	FigureNodes rufleg;
+	rufleg.parent = rootPtr;
+	rufleg.pos = glm::vec3(0.0, 1.0, 0.0);
+	FigureNodes rlfleg;
+	rlfleg.parent = std::make_shared<FigureNodes>(rufleg);
+	rlfleg.pos = glm::vec3(0.0, 2.0, 0.0);
+	rufleg.children.push_back(rlfleg);
+
+	FigureNodes lufleg;
+	lufleg.parent = rootPtr;
+	lufleg.pos = glm::vec3(0.0, 1.0, 0.0);
+	FigureNodes llfleg;
+	llfleg.parent = std::make_shared<FigureNodes>(lufleg);
+	llfleg.pos = glm::vec3(0.0, 2.0, 0.0);
+	lufleg.children.push_back(llfleg);
+
+	FigureNodes midBack;
+	midBack.parent = rootPtr;
+	midBack.pos = glm::vec3(1.0, 0.0, 0.0);
+
+	FigureNodes back;
+	back.parent = std::make_shared<FigureNodes>(midBack);
+	back.pos = glm::vec3(2.0, 0.0, 0.0);
+
+	std::shared_ptr<FigureNodes> backPtr = std::make_shared<FigureNodes>(back);
+
+	FigureNodes rubleg;
+	rubleg.parent = backPtr;
+	rubleg.pos = glm::vec3(2.0, 1.0, 0.0);
+	FigureNodes rlbleg;
+	rlbleg.parent = std::make_shared<FigureNodes>(rubleg);
+	rlbleg.pos = glm::vec3(2.0, 2.0, 0.0);
+	rubleg.children.push_back(rlbleg);
+
+	FigureNodes lubleg;
+	lubleg.parent = backPtr;
+	lubleg.pos = glm::vec3(2.0, 1.0, 0.0);
+	FigureNodes llbleg;
+	llbleg.parent = std::make_shared<FigureNodes>(lubleg);
+	llbleg.pos = glm::vec3(2.0, 2.0, 0.0);
+	lubleg.children.push_back(llbleg);
+
+	back.children.push_back(rubleg);
+	back.children.push_back(lubleg);
+
+	midBack.children.push_back(back);
+
+	root.children.push_back(neck);
+	root.children.push_back(rufleg);
+	root.children.push_back(lufleg);
+	root.children.push_back(midBack);
+}
+
+void GraphicsEngine::figureUpdate(FigureNodes node, uint32_t currentImage) {
+	if (node.parent != NULL) {
+		UniformBufferObject ubo = {};
+
+		ubo.model = glm::mat4(1.0f);
+		
+		ubo.model = glm::translate(ubo.model, (node.pos + node.parent->pos) / 2.0f);
+
+		ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node.parent->pos - node.pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
+		//ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node.parent->pos - node.pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
+		//ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node.parent->pos - node.pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		ubo.model = glm::scale(ubo.model, glm::vec3(1.0f, 0.3f, 0.3f));
+	
+		ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 6.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), vh.getSwapchainExtent().width / (float)vh.getSwapchainExtent().height, 0.1f, 10.0f);
+
+		void* data;
+		vkMapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage + (nodeIterator * vh.getSwapChainImages().size())], 0, sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage + (nodeIterator * vh.getSwapChainImages().size())]);
+
+		nodeIterator++;
+	}
+
+	for (auto child : node.children) {
+		figureUpdate(child, currentImage);
+	}
 }

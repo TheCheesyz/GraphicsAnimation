@@ -68,6 +68,9 @@
     <ClInclude Include="RenderedObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FigureNodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.vert">
