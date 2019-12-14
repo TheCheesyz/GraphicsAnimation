@@ -10,6 +10,7 @@
 #include "GraphicsPipelineHandler.h"
 #include "ObjLoader.h"
 #include "FigureNodes.h"
+#include "PhysicsEngine.h"
 
 class GraphicsEngine
 {
@@ -26,12 +27,13 @@ private:
 	void cleanup();
 
 	void createFigure();
-	void figureUpdate(FigureNodes node, uint32_t currentImage);
+	void figureUpdate(FigureNodes& node, uint32_t currentImage, float time);
 
 	VulkanHandler vh;
 	GraphicsPipelineHandler gph;
 	ObjLoader ol;
 	GLFWwindow* window;
+	PhysicsEngine pe;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;

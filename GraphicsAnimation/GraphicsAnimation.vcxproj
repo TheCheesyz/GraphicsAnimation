@@ -163,6 +163,7 @@
     <ClCompile Include="GraphicsPipelineHandler.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ObjLoader.cpp" />
+    <ClCompile Include="PhysicsEngine.cpp" />
     <ClCompile Include="VulkanHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -170,6 +171,7 @@
     <ClInclude Include="GraphicsEngine.h" />
     <ClInclude Include="GraphicsPipelineHandler.h" />
     <ClInclude Include="ObjLoader.h" />
+    <ClInclude Include="PhysicsEngine.h" />
     <ClInclude Include="RenderedObject.h" />
     <ClInclude Include="UniformBufferObject.h" />
     <ClInclude Include="Vertex.h" />

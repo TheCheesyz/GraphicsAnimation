@@ -23,6 +23,7 @@ void GraphicsEngine::init() {
 	gph.initGraphicsPipeline();
 	createSyncObjects();
 	createFigure();
+	pe = PhysicsEngine(glm::vec3(0.0f, 1.0f, 0.0f), 2.5f);
 	mainLoop();
 	cleanup();
 }
@@ -138,10 +139,11 @@ void GraphicsEngine::updateUniformBuffer(uint32_t currentImage) {
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+	startTime = currentTime;
 
 	//Create Figure
 	nodeIterator = 0;
-	figureUpdate(root, currentImage);
+	figureUpdate(root, currentImage, time);
 	//End Create Figure
 	/*
 	for (int i = 0; i < gph.getRenderedObjectsSize(); i++) {
@@ -205,6 +207,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes rlfleg;
 	rlfleg.parent = std::make_shared<FigureNodes>(rufleg);
 	rlfleg.pos = glm::vec3(0.0, 2.0, 0.0);
+	rlfleg.vel = glm::vec3(0.1, 0.0, 0.0);
 	rufleg.children.push_back(rlfleg);
 
 	FigureNodes lufleg;
@@ -213,6 +216,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes llfleg;
 	llfleg.parent = std::make_shared<FigureNodes>(lufleg);
 	llfleg.pos = glm::vec3(0.0, 2.0, 0.0);
+	llfleg.vel = glm::vec3(0.1, 0.0, 0.0);
 	lufleg.children.push_back(llfleg);
 
 	FigureNodes midBack;
@@ -231,6 +235,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes rlbleg;
 	rlbleg.parent = std::make_shared<FigureNodes>(rubleg);
 	rlbleg.pos = glm::vec3(2.0, 2.0, 0.0);
+	rlbleg.vel = glm::vec3(0.1, 0.0, 0.0);
 	rubleg.children.push_back(rlbleg);
 
 	FigureNodes lubleg;
@@ -239,6 +244,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes llbleg;
 	llbleg.parent = std::make_shared<FigureNodes>(lubleg);
 	llbleg.pos = glm::vec3(2.0, 2.0, 0.0);
+	llbleg.vel = glm::vec3(0.1, 0.0, 0.0);
 	lubleg.children.push_back(llbleg);
 
 	back.children.push_back(rubleg);
@@ -252,13 +258,17 @@ void GraphicsEngine::createFigure() {
 	root.children.push_back(midBack);
 }
 
-void GraphicsEngine::figureUpdate(FigureNodes node, uint32_t currentImage) {
+void GraphicsEngine::figureUpdate(FigureNodes& node, uint32_t currentImage, float time) {
+	pe.applyPhysics(node, time);
+	if(node.parent == NULL)
+		std::cout << node.pos.y << std::endl;
 	if (node.parent != NULL) {
 		UniformBufferObject ubo = {};
 
 		ubo.model = glm::mat4(1.0f);
 		
 		ubo.model = glm::translate(ubo.model, (node.pos + node.parent->pos) / 2.0f);
+		std::cout << node.pos.y << ", " << node.parent->pos.y << ", " << node.pos.y + node.parent->pos.y / 2.0f << std::endl;
 
 		ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node.parent->pos - node.pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
 		//ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node.parent->pos - node.pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -278,6 +288,6 @@ void GraphicsEngine::figureUpdate(FigureNodes node, uint32_t currentImage) {
 	}
 
 	for (auto child : node.children) {
-		figureUpdate(child, currentImage);
+		figureUpdate(child, currentImage, time);
 	}
 }
