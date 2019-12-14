@@ -24,10 +24,11 @@ private:
 	void recreateSwapChain();
 	void updateUniformBuffer(uint32_t currentImage);
 	void cleanupSwapChain();
+	void cleanupFigureNodes(FigureNodes* node);
 	void cleanup();
 
 	void createFigure();
-	void figureUpdate(FigureNodes& node, uint32_t currentImage, float time);
+	void figureUpdate(FigureNodes* node, uint32_t currentImage, float time);
 
 	VulkanHandler vh;
 	GraphicsPipelineHandler gph;
@@ -39,7 +40,7 @@ private:
 	std::vector<VkFence> inFlightFences;
 	size_t currentFrame = 0;
 
-	FigureNodes root;
+	FigureNodes* root;
 	uint32_t nodeIterator;
 };
 
