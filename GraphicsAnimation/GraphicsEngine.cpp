@@ -178,7 +178,7 @@ void GraphicsEngine::cleanupSwapChain() {
 }
 
 void GraphicsEngine::cleanupFigureNodes(FigureNodes* node) {
-	for (auto child : root->children) {
+	for (auto child : node->children) {
 		cleanupFigureNodes(child);
 	}
 	delete node;
@@ -216,7 +216,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes* rlfleg = new FigureNodes();
 	rlfleg->parent = std::make_shared<FigureNodes>(*rufleg);
 	rlfleg->pos = glm::vec3(0.0, 2.0, 0.0);
-	rlfleg->vel = glm::vec3(0.1, 0.0, 0.0);
+	rlfleg->vel = glm::vec3(-0.1, 0.0, 0.0);
 	rufleg->children.push_back(rlfleg);
 
 	FigureNodes* lufleg = new FigureNodes();
@@ -225,7 +225,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes* llfleg = new FigureNodes();
 	llfleg->parent = std::make_shared<FigureNodes>(*lufleg);
 	llfleg->pos = glm::vec3(0.0, 2.0, 0.0);
-	llfleg->vel = glm::vec3(0.1, 0.0, 0.0);
+	llfleg->vel = glm::vec3(-0.1, 0.0, 0.0);
 	lufleg->children.push_back(llfleg);
 
 	FigureNodes* midBack = new FigureNodes();
@@ -244,7 +244,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes* rlbleg = new FigureNodes();
 	rlbleg->parent = std::make_shared<FigureNodes>(*rubleg);
 	rlbleg->pos = glm::vec3(2.0, 2.0, 0.0);
-	rlbleg->vel = glm::vec3(0.1, 0.0, 0.0);
+	rlbleg->vel = glm::vec3(-0.1, 0.0, 0.0);
 	rubleg->children.push_back(rlbleg);
 	
 	FigureNodes* lubleg = new FigureNodes();
@@ -253,7 +253,7 @@ void GraphicsEngine::createFigure() {
 	FigureNodes* llbleg = new FigureNodes();
 	llbleg->parent = std::make_shared<FigureNodes>(*lubleg);
 	llbleg->pos = glm::vec3(2.0, 2.0, 0.0);
-	llbleg->vel = glm::vec3(0.1, 0.0, 0.0);
+	llbleg->vel = glm::vec3(-0.1, 0.0, 0.0);
 	lubleg->children.push_back(llbleg);
 
 	back->children.push_back(rubleg);
@@ -268,18 +268,21 @@ void GraphicsEngine::createFigure() {
 }
 
 void GraphicsEngine::figureUpdate(FigureNodes* node, uint32_t currentImage, float time) {
-	pe.applyPhysics(node, time);
-	if(node->parent == NULL)
-		std::cout << node->pos.y << std::endl;
+	if(node->children.empty() && node->pos.y >= 0)
+		pe.applyPhysics(node, time);
 	if (node->parent != NULL) {
 		UniformBufferObject ubo = {};
 
 		ubo.model = glm::mat4(1.0f);
 		
 		ubo.model = glm::translate(ubo.model, (node->pos + node->parent->pos) / 2.0f);
-		std::cout << node->pos.y << ", " << node->parent->pos.y << ", " << node->pos.y + node->parent->pos.y / 2.0f << std::endl;
-
-		ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node->parent->pos - node->pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
+		//std::cout << node->pos.y << ", " << node->parent->pos.y << ", " << node->pos.y + node->parent->pos.y / 2.0f << std::endl;
+		if (node->parent->pos.y >= node->pos.y) {
+			ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node->parent->pos - node->pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
+		}
+		else {
+			ubo.model = glm::rotate(ubo.model, -glm::acos(glm::dot(glm::normalize(node->parent->pos - node->pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
+		}
 		//ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node.parent->pos - node.pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
 		//ubo.model = glm::rotate(ubo.model, glm::acos(glm::dot(glm::normalize(node.parent->pos - node.pos), glm::vec3(1.0f, 0.0f, 0.0f))), glm::vec3(0.0f, 0.0f, 1.0f));
 
