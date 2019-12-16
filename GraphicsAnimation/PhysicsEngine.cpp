@@ -10,7 +10,8 @@ PhysicsEngine::PhysicsEngine(glm::vec3 gravity_, float floor_) :
 }
 
 void PhysicsEngine::applyPhysics(FigureNodes* node, float deltaTime) {
-	applyForces(node, deltaTime);
+	if(node->gravity == true)
+		applyForces(node, deltaTime);
 	applyVelocity(node, deltaTime);
 }
 
