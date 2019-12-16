@@ -10,7 +10,7 @@ typedef struct FigureNodes {
 	glm::vec3 vel = glm::vec3(0.0f, 0.0f, 0.0f);
 	bool gravity = false;
 	std::vector<FigureNodes*> children;
-	std::shared_ptr<FigureNodes> parent;
+	FigureNodes* parent;
 } Node;
 
 #endif

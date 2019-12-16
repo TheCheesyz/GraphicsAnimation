@@ -2,7 +2,9 @@
 #define PHYSICS
 
 #include <glm/glm.hpp>
+#include <cmath>
 #include "FigureNodes.h"
+#include <iostream>//remove
 
 class PhysicsEngine
 {
@@ -15,6 +17,7 @@ private:
 	bool checkFloorCollision(float yPos);
 	void applyForces(FigureNodes* node, float deltaTime);
 	void applyVelocity(FigureNodes* node, float deltaTime);
+	void adjustParent(FigureNodes* node);
 
 	glm::vec3 gravity;
 	float floor;
