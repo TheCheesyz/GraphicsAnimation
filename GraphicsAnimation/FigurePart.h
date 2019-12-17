@@ -1,0 +1,6 @@
+#ifndef ARTICULATED_FIGURE
+#define ARTICULATED_FIGURE
+
+
+
+#endif

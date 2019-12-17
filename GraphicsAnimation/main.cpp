@@ -1,3 +1,13 @@
+/**
+*
+*	Zephram Carroll 12_16_2019
+*	
+*	Using Vulkan API generates an animal and sets it running.
+*
+*	Initial Vulkan setup and education performed using the tutorial at: https://vulkan-tutorial.com/
+*
+*/
+
 #include "GraphicsEngine.h"
 
 int main() {
