@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 #include <cmath>
 #include "FigureNodes.h"
-#include <iostream>//remove
 
 class PhysicsEngine
 {
@@ -12,6 +11,7 @@ public:
 	PhysicsEngine();
 	PhysicsEngine(glm::vec3 gravity_, float floor_);
 	void applyPhysics(FigureNodes* node, float deltaTime);
+	void applyAcceleration(FigureNodes* root);
 
 private:
 	bool checkFloorCollision(float yPos);
@@ -21,6 +21,7 @@ private:
 
 	glm::vec3 gravity;
 	float floor;
+	bool accelerate = false;
 };
 
 #endif

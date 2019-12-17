@@ -144,6 +144,7 @@ void GraphicsEngine::updateUniformBuffer(uint32_t currentImage) {
 	//Create Figure
 	nodeIterator = 0;
 	figureUpdate(root, currentImage, time);
+	pe.applyAcceleration(root);
 	//End Create Figure
 	/*
 	for (int i = 0; i < gph.getRenderedObjectsSize(); i++) {
@@ -288,8 +289,8 @@ void GraphicsEngine::figureUpdate(FigureNodes* node, uint32_t currentImage, floa
 
 		ubo.model = glm::scale(ubo.model, glm::vec3(1.0f, 0.3f, 0.3f));
 	
-		ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 6.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), vh.getSwapchainExtent().width / (float)vh.getSwapchainExtent().height, 0.1f, 10.0f);
+		ubo.view = glm::lookAt(glm::vec3(-3.0f, -.2f, 6.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), vh.getSwapchainExtent().width / (float)vh.getSwapchainExtent().height, 0.1f, 30.0f);
 
 		void* data;
 		vkMapMemory(vh.getDevice(), gph.getUniformBuffersMemory()[currentImage + (nodeIterator * vh.getSwapChainImages().size())], 0, sizeof(ubo), 0, &data);

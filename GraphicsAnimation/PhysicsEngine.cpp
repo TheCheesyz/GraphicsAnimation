@@ -19,6 +19,22 @@ void PhysicsEngine::applyPhysics(FigureNodes* node, float deltaTime) {
 	}
 }
 
+void PhysicsEngine::applyAcceleration(FigureNodes* root) {
+	for (auto child : root->children) {
+		applyAcceleration(child);
+	}
+	if (accelerate) {
+		root->vel.x -= .2;
+		if(root->parent == NULL)
+			accelerate = false;
+	}
+	else {
+		if (root->vel.x < 0) {
+			root->vel.x += .005;
+		}
+	}
+}
+
 bool PhysicsEngine::checkFloorCollision(float yPos) {
 	if (yPos >= floor) {
 		return true;
@@ -31,8 +47,7 @@ void PhysicsEngine::applyForces(FigureNodes* node, float deltaTime) {
 	if (checkFloorCollision(node->pos.y)) {
 		if(node->vel.y > 0)
 			node->vel.y *= -1;
-		//TODO: Accelerate All Nodes
-		//node->vel -= (gravity * deltaTime);
+		accelerate = true;
 	}
 }
 
